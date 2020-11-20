@@ -30,14 +30,15 @@ class RNN(nn.Module):
     def forward(self, text):
         embedded=self.embedding(text)
         output, hidden=self.rnn(embedded)
-        #output, (hidden,cell)=self.rnn(embedded) #if LSTM
+        #output, (hidden,cell)=self.LSTM(embedded) #if LSTM
         #hidden=hidden[-1,:,:] #if number of layer >1 and bidirectional False
         #hidden = torch.cat((hidden[-2,:,:], hidden[-1,:,:]), dim = 1) #if bidirecional =true
         out=self.fc1(hidden.squeeze(0))
         out=self.sigmoid(out)
         return self.fc2(out) 
 
-model=RNN(len(TEXT.vocab))
+bidirectional=False
+model=RNN(len(TEXT.vocab),bidirectional)
 model=model.to(device)
 
 optimizer=torch.optim.SGD(model.parameters(), lr=3e-5)
