@@ -1,4 +1,4 @@
-# Sentimental-Analysis
+# Sentimental Analysis in Pytorch
 ## Requirements
 Pytorch will be used for buildng all the models
 
@@ -16,5 +16,4 @@ We will use the transformers library, which can be installed via:
 ```bash
 pip install transformers
 ```
-## CODE 1 : Single_double_bidiretional_RNN.py 
-
+We will be using the the movie reviwes from IMDB datasets which has only two classes : positive and negative sentiment. 20k examaples are used for training, 5k examplea are used for vaidation and 25k examples are used for testng.
