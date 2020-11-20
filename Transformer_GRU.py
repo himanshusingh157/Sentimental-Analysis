@@ -8,11 +8,12 @@ from torchtext import data,datasets
 #!pip install transformers
 from transformers import BertTokenizer,BertModel
 
+#using BERT base model for embeddings; one can also use BERT large for the same
+#Loading BERT tokenizers
+#can only process 512 words in a sentence
 tokenizer=BertTokenizer.from_pretrained('bert-base-uncased')
-
 init_index=tokenizer.cls_token_id
 eos_index=tokenizer.sep_token_id 
-
 max_length=tokenizer.max_model_input_sizes['bert-base-uncased']
 
 def tokenize_input(sentence):
@@ -24,13 +25,13 @@ TEXT=data.Field(batch_first=True,use_vocab = False,tokenize = tokenize_input,pre
 LABEL=data.LabelField(dtype=torch.float)
 LABEL.build_vocab(train_data)
 
+#loading datsets
 train_data, test_data=datasets.IMDB.splits(TEXT, LABEL)
 train_data, valid_data=train_data.split(random_state=random.seed(999),split_ratio=0.8)
-
 device=torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
 train_iter, valid_iter, test_iter = data.BucketIterator.splits((train_data, valid_data, test_data),batch_size = 64,device = device)
 
+#BERT model
 bert = BertModel.from_pretrained('bert-base-uncased')
 
 #Hidden_dimension=256
