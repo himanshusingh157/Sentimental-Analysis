@@ -4,6 +4,8 @@ import torch.optim as optim
 import torch.nn as nn
 import random
 
+#loading Datasets
+#setting embedding to Glove vectors
 TEXT=data.Field(tokenize='spacy', include_lengths = True)
 LABEL=data.LabelField(dtype=torch.float)
 
@@ -39,14 +41,15 @@ class LSTM(nn.Module):
 
 model=LSTM(len(TEXT.vocab),TEXT.vocab.stoi[TEXT.pad_token])
 
+#copying mebedding weights from glove vectors
 model.embedding.weight.data.copy_(TEXT.vocab.vectors)
 
 model.embedding.weight.data[TEXT.vocab.stoi[TEXT.unk_token]]=torch.zeros(100)
 model.embedding.weight.data[TEXT.vocab.stoi[TEXT.pad_token]]=torch.zeros(100)
 model=model.to(device)
 
+#setting loss function and optimizer
 optimizer=optim.Adam(model.parameters())
-
 criterion=nn.BCEWithLogitsLoss()
 criterion=criterion.to(device)
 
@@ -86,6 +89,7 @@ def evaluate(model, iter, criterion):
             total_acc+=acc.item()
     return total_loss / len(iter), total_acc / len(iter)
 
+#training model
 epochs=20
 best_loss=float('inf')
 for epoch in range(epochs):
@@ -97,6 +101,7 @@ for epoch in range(epochs):
     
     print(f'Epoch: {epoch+1}   Train Loss: {train_loss:.4f}   Train Accuracy: {train_acc*100:.2f}%   Valiation Loss: {valid_loss:.4f}   Validtion Accuracy: {valid_acc*100:.2f}%')
 
+#testing model
 model.load_state_dict(torch.load('Bidirectional_LSTM.pt'))
 test_loss, test_acc = evaluate(model, test_iter, criterion)
 print(f'Test Loss: {test_loss:.4f}   Test Acc: {test_acc*100:.2f}%')
