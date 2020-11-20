@@ -2,7 +2,7 @@ import torch
 from torchtext import data,datasets
 import random
 import torch.nn as nn
-
+#Loading data, Tokenizing it, and splitting it into training, validation and test data
 TEXT=data.Field(tokenize='spacy')
 LABEL=data.LabelField(dtype=torch.float)
 train_data, test_data=datasets.IMDB.splits(TEXT, LABEL)
@@ -14,33 +14,41 @@ LABEL.build_vocab(train_data)
 device=torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 train_iter, valid_iter, test_iter=data.BucketIterator.splits((train_data, valid_data, test_data), batch_size=64, device=device)
 
+#Defining model
+# if want LSTM comment line 27,35 and uncomment line 28,36
+# if RNN,LSTM is multilayered and not bidirectional then uncomment line 37
+# if RNN, LSTM is bidirectional id bidirectinal then uncomment line 38
 #Embedding Dimension=200
 #Hidden DImension (h_t)=256
 class RNN(nn.Module):
-    def __init__(self, input_dim):
+    def __init__(self, input_dim,num_layers,bidirectional):
         super().__init__()
         self.embedding=nn.Embedding(input_dim,200)
-        self.rnn=nn.RNN(200,256)#if layers=2 add ",2"
-        #self.rnn=nn.LSTM(200,256) #if training with LSTM
-        self.fc1=nn.Linear(256,64)
-        #self.fc1=nn.Linear(2*256,64) #2 is for number of layers
+        self.rnn=nn.RNN(200,256,num_layers,bidirectional)
+        #self.rnn=nn.LSTM(200,256,num_layers,bidirectional)
+        self.fc1=nn.Linear(num_layers*256,64)
         self.fc2=nn.Linear(64,1)
         self.sigmoid=nn.Sigmoid()
         
     def forward(self, text):
         embedded=self.embedding(text)
         output, hidden=self.rnn(embedded)
-        #output, (hidden,cell)=self.LSTM(embedded) #if LSTM
-        #hidden=hidden[-1,:,:] #if number of layer >1 and bidirectional False
-        #hidden = torch.cat((hidden[-2,:,:], hidden[-1,:,:]), dim = 1) #if bidirecional =true
+        #output, (hidden,cell)=self.LSTM(embedded)
+        #hidden=hidden[-1,:,:]
+        #hidden = torch.cat((hidden[-2,:,:], hidden[-1,:,:]), dim = 1)
         out=self.fc1(hidden.squeeze(0))
         out=self.sigmoid(out)
         return self.fc2(out) 
 
+
+#For Multilayer RNN, LSTM :  set num_layers to that value
+#If want bidirectional RNN, LSTM set bidirectional=True
+num_layers=1
 bidirectional=False
-model=RNN(len(TEXT.vocab),bidirectional)
+model=RNN(len(TEXT.vocab),num_layers,bidirectional)
 model=model.to(device)
 
+#Choosing Optimizer and Loss
 optimizer=torch.optim.SGD(model.parameters(), lr=3e-5)
 
 criterion=nn.BCEWithLogitsLoss()
@@ -80,6 +88,7 @@ def evaluate(model, iter, criterion):
             total_acc+=acc.item()
     return total_loss/len(iter), total_acc/len(iter)
 
+#Training Model
 epochs=20
 best_loss = float('inf')
 for epoch in range(epochs):
@@ -90,6 +99,7 @@ for epoch in range(epochs):
         torch.save(model.state_dict(), 'RNN_model.pt')
     print(f'Epoch: {epoch+1}   Train Loss: {train_loss:.4f}   Train Acc: {train_acc*100:.2f}%   Val. Loss: {valid_loss:.4f}   Val. Acc: {valid_acc*100:.2f}%')
 
+#Testing model
 model.load_state_dict(torch.load('RNN_model.pt'))
 test_loss, test_acc = evaluate(model, test_iter, criterion)
 print(f'Test Loss: {test_loss:.4f}   Test Acc: {test_acc*100:.2f}%')
